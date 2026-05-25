@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>game-of-life · 项目介绍</title>
+<style>
+  :root {
+    --bg: #FAFAFA;
+    --fg: #1A1A1A;
+    --muted: #6B6B6B;
+    --line: #E6E6E6;
+    --kiko: #BA1C1C;
+    --code-bg: #F4F2EE;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.7;
+    font-size: 15px;
+    padding: 40px 20px 80px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px; margin-bottom: 28px;
+  }
+  .brand {
+    font-size: 11px; font-weight: 800; letter-spacing: 2.5px; color: var(--kiko);
+  }
+  .meta { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  h1 {
+    font-size: 30px; font-weight: 900; margin: 0 0 6px;
+    letter-spacing: -0.5px;
+  }
+  h1 .ver { color: var(--kiko); font-weight: 800; font-size: 22px; }
+  .subtitle { color: var(--muted); margin: 0 0 36px; }
+  h2 {
+    font-size: 19px; font-weight: 800; margin: 40px 0 14px;
+    padding-left: 12px; border-left: 4px solid var(--kiko);
+  }
+  h2 .num { color: var(--kiko); margin-right: 6px; }
+  h3 { font-size: 15px; font-weight: 800; margin: 22px 0 10px; }
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+  }
+  .card.stack > * + * { margin-top: 10px; }
+  .tag {
+    display: inline-block; font-size: 10px; font-weight: 800;
+    padding: 2px 8px; border-radius: 2px; letter-spacing: 1px;
+    color: #fff; background: var(--kiko); margin-right: 8px;
+    vertical-align: 1px;
+  }
+  .tag.gray { background: #888; }
+  code {
+    font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+    background: var(--code-bg); padding: 1px 6px; border-radius: 3px;
+    font-size: 13px;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: 14px 16px; overflow-x: auto;
+    font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.55;
+    margin: 12px 0;
+  }
+  table {
+    border-collapse: collapse; width: 100%; margin: 12px 0;
+    font-size: 13.5px;
+  }
+  th, td {
+    border: 1px solid var(--line); padding: 8px 12px; text-align: left;
+    vertical-align: top;
+  }
+  th { background: #F4F2EE; font-weight: 700; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  .file-tree {
+    font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 13px; line-height: 1.7;
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 4px; padding: 14px 18px;
+  }
+  .pill {
+    display: inline-block; font-size: 10.5px; font-weight: 700;
+    padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line);
+    background: #fff; color: var(--muted); margin-right: 6px;
+  }
+  strong { color: var(--fg); }
+  kbd {
+    display: inline-block;
+    font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 12px; font-weight: 700;
+    padding: 1px 8px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    background: #fff;
+    color: var(--fg);
+    margin: 0 2px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="brand">PROJECT · README · DOC</span>
+  <span class="meta">2026-05-25 · by 狗哥</span>
+</header>
+
+<h1>game-of-life <span class="ver">/ Conway's Game of Life</span></h1>
+<p class="subtitle">JavaFX 实现的康威生命游戏 —— 项目功能介绍 &amp; 运行指南。</p>
+
+<h2><span class="num">＊</span> 这是什么</h2>
+<div class="card stack">
+  <p>
+    <span class="pill">Java 11</span>
+    <span class="pill">Maven</span>
+    <span class="pill">JavaFX 17</span>
+    <span class="pill">TestNG</span>
+    <span class="pill">givedrug.math</span>
+  </p>
+  <p>
+    一个能在屏幕上跑 <strong>康威生命游戏（Conway's Game of Life）</strong> 的 JavaFX Demo。
+    支持从 <a href="https://conwaylife.com/" target="_blank">conwaylife.com</a> 标准的 <code>.cells</code>
+    plaintext 格式加载初始图样，启动后用 <code>AnimationTimer</code> 持续演进，
+    在单个 <code>Canvas</code> 上渲染。
+  </p>
+  <p>
+    内置两个图样：<code>gosperglidergun</code>（最经典的 Gosper 滑翔机枪）
+    和 <code>breeder1</code>（Bill Gosper 1970s 发现的二次增长图样）。
+  </p>
+</div>
+
+<h2><span class="num">＊</span> 核心规则</h2>
+<div class="card stack">
+  <p>每个格子有"活/死"两态。每一步根据当前格子的 8 邻居（上下左右 + 4 个对角）计算下一帧：</p>
+  <ol>
+    <li><strong>活 → 死（孤独）</strong>：活格子的活邻居数 &lt; 2</li>
+    <li><strong>活 → 死（拥挤）</strong>：活格子的活邻居数 &gt; 3</li>
+    <li><strong>活 → 活（存活）</strong>：活格子的活邻居数 = 2 或 3</li>
+    <li><strong>死 → 活（繁殖）</strong>：死格子的活邻居数 = 3</li>
+  </ol>
+</div>
+
+<h2><span class="num">＊</span> 功能特性</h2>
+<div class="card stack">
+  <h3>渲染</h3>
+  <ul>
+    <li>单 <code>Canvas</code> + <code>GraphicsContext.fillRect</code>，支持百万级格子稳定渲染</li>
+    <li><strong>增量重绘</strong>：每帧只重绘"状态翻转"的格子，CPU 开销与活跃区域大小相关而非画布总面积</li>
+  </ul>
+
+  <h3>演化算法</h3>
+  <ul>
+    <li><strong>稀疏活细胞集合</strong>：用 <code>Set&lt;Long&gt;</code>（坐标编码成 long）只保存活细胞</li>
+    <li>每代复杂度约 <code>O(A)</code>，A 是活细胞数 —— 比稠密遍历 <code>O(W·H)</code> 在稀疏图样下快几个数量级</li>
+    <li>边界：硬边界（出界视为死格子）</li>
+  </ul>
+
+  <h3>图样加载</h3>
+  <ul>
+    <li>支持 conwaylife.com 标准的 <code>.cells</code> plaintext 格式</li>
+    <li><strong>自动测尺寸</strong>：解析时统计行数和最大行长，调用方不再手填 <code>boundx/boundy</code></li>
+    <li>注释行（<code>!</code> 开头）和空行自动跳过</li>
+  </ul>
+
+  <h3>交互控制</h3>
+  <ul>
+    <li>键盘控制：暂停/单步/调速/重置/清屏</li>
+    <li>鼠标点击：切换单个格子的状态（暂停时可手画图样）</li>
+    <li>窗口标题实时显示：图样名 / 代数 / 活细胞数 / 演进速率 / 暂停状态</li>
+  </ul>
+</div>
+
+<h2><span class="num">＊</span> 怎么跑</h2>
+
+<div class="card stack">
+  <h3>前置条件</h3>
+  <ul>
+    <li><strong>JDK 11+</strong>（推荐 JDK 17 / 21；JavaFX 17 已作为 Maven 依赖引入，<strong>无需单独装 JavaFX</strong>）</li>
+    <li><strong>Maven 3.6+</strong></li>
+  </ul>
+  <p>本机 macOS 上的常用 JDK 切换：</p>
+<pre>export JAVA_HOME=$(/usr/libexec/java_home -v 21)</pre>
+</div>
+
+<div class="card stack">
+  <h3>运行（默认 breeder1）</h3>
+<pre>cd /Users/mi/game-of-life
+mvn javafx:run</pre>
+  <p>启动后会弹出一个 1500×700 的窗口，可以看到 Breeder 1 一边走一边喷出滑翔机枪，
+    活细胞数随时间 <code>t</code> 增长为 <code>O(t²)</code>。</p>
+</div>
+
+<div class="card stack">
+  <h3>切换图样：Gosper 滑翔机枪</h3>
+<pre>mvn javafx:run -Djavafx.args="gun"</pre>
+  <p>支持的参数（大小写不敏感）：</p>
+  <table>
+    <thead><tr><th>参数</th><th>对应图样</th><th>画布</th></tr></thead>
+    <tbody>
+      <tr><td><code>gun</code> / <code>gosper</code> / <code>gosper-glider-gun</code></td><td>Gosper 滑翔机枪</td><td>200×100，cell=6px</td></tr>
+      <tr><td><code>breeder</code> / <code>breeder1</code>（默认）</td><td>Breeder 1</td><td>1500×700，cell=1px</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <span class="tag gray">注</span>
+    新加图样：把 <code>.cells</code> 文件丢到 <code>src/main/resources/</code>，
+    在 <code>PatternPreset.java</code> 加一条枚举即可，不用再手填尺寸。
+  </p>
+</div>
+
+<div class="card stack">
+  <h3>跑测试</h3>
+<pre>mvn test</pre>
+  <p>包含 3 个 TestNG 用例：图样加载校验、稳定块（block）、振荡器（blinker）。</p>
+</div>
+
+<div class="card stack">
+  <h3>只编译不跑</h3>
+<pre>mvn compile        # 编译主代码
+mvn package        # 打成 jar 到 target/</pre>
+</div>
+
+<h2><span class="num">＊</span> 键盘 &amp; 鼠标</h2>
+<div class="card stack">
+  <table>
+    <thead><tr><th>按键 / 操作</th><th>作用</th></tr></thead>
+    <tbody>
+      <tr><td><kbd>Space</kbd></td><td>暂停 / 继续</td></tr>
+      <tr><td><kbd>S</kbd></td><td>单步推进一代（仅在暂停时）</td></tr>
+      <tr><td><kbd>↑</kbd></td><td>加速（每代间隔减半，下限 8ms）</td></tr>
+      <tr><td><kbd>↓</kbd></td><td>减速（每代间隔加倍，上限 2s）</td></tr>
+      <tr><td><kbd>R</kbd></td><td>重置当前预设到初始图样</td></tr>
+      <tr><td><kbd>C</kbd></td><td>清空整个画布</td></tr>
+      <tr><td>鼠标点击</td><td>切换被点击格子的状态（活↔死）</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <span class="tag gray">小贴士</span>
+    先 <kbd>C</kbd> 清屏 → 鼠标点击画自己的图样 → <kbd>Space</kbd> 启动，可以当个简易沙盒。
+  </p>
+</div>
+
+<h2><span class="num">＊</span> 项目结构</h2>
+<div class="file-tree">
+game-of-life/<br>
+├── pom.xml &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Maven 配置（Java 11 + JavaFX 17 + TestNG）<br>
+├── README.md &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 简短说明<br>
+├── index.html &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 本文档<br>
+└── src/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;├── main/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── java/givedrug/math/gameoflife/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── GameOfLife.java &nbsp;&nbsp;&nbsp;&nbsp;# JavaFX 入口 + UI / Canvas 渲染 / 输入处理<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── GameEngine.java &nbsp;&nbsp;&nbsp;&nbsp;# 稀疏活细胞 Set 演化算法<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── LoadPatternFile.java &nbsp;# .cells 解析（自动测尺寸）<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── Pattern.java &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 解析结果（活细胞坐标 + 宽高）<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── PatternPreset.java &nbsp;&nbsp;# 内置图样预设枚举<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── resources/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── gosperglidergun.cells &nbsp;# 滑翔机枪（36×9）<br>
+&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── breeder1.cells &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Breeder 1（749×338）<br>
+&nbsp;&nbsp;&nbsp;&nbsp;└── test/java/givedrug/math/gameoflife/<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── LoadPatternFileTest.java &nbsp;# 加载器 + 演化算法的 TestNG 用例
+</div>
+
+<h2><span class="num">＊</span> 架构概览</h2>
+<div class="card stack">
+  <table>
+    <thead><tr><th>类</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>GameOfLife</code></td>
+        <td>JavaFX <code>Application</code> 入口；持有 <code>Canvas</code>，处理键盘/鼠标输入；<code>AnimationTimer</code> 按 <code>stepIntervalNanos</code> 驱动演进；增量重绘翻转的格子。</td>
+      </tr>
+      <tr>
+        <td><code>GameEngine</code></td>
+        <td>纯算法层，与 JavaFX 解耦。<code>step()</code> 演进一代并返回"状态翻转的格子集合"，供调用方做增量重绘。可被单元测试直接覆盖。</td>
+      </tr>
+      <tr>
+        <td><code>LoadPatternFile</code></td>
+        <td>从 classpath 读 <code>.cells</code>，扫描注释行，统计宽高，输出 <code>Pattern</code>。</td>
+      </tr>
+      <tr>
+        <td><code>Pattern</code></td>
+        <td>不可变值对象：宽 / 高 / 活细胞 long 编码数组。坐标编码 <code>(x &lt;&lt; 32) | y</code>。</td>
+      </tr>
+      <tr>
+        <td><code>PatternPreset</code></td>
+        <td>内置图样预设枚举：文件名 + 画布尺寸 + cell 边长 + 偏移；附 <code>fromArg()</code> 解析命令行。</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2><span class="num">＊</span> 加自己的图样</h2>
+<div class="card stack">
+  <ol>
+    <li>从 <a href="https://conwaylife.com/wiki/" target="_blank">conwaylife.com wiki</a> 找一个图样，下载 <code>.cells</code> 文件。</li>
+    <li>放到 <code>src/main/resources/</code> 下，比如 <code>acorn.cells</code>。</li>
+    <li>在 <code>PatternPreset.java</code> 加一条枚举：
+<pre>ACORN(
+        "acorn.cells",
+        /* canvasWidth */ 400,
+        /* canvasHeight */ 300,
+        /* sideLength */  3,
+        /* shiftX */      150,
+        /* shiftY */      120),</pre>
+    </li>
+    <li>在 <code>fromArg()</code> 的 switch 加个别名（可选）。</li>
+    <li>运行：<code>mvn javafx:run -Djavafx.args="ACORN"</code></li>
+  </ol>
+  <p>
+    <span class="tag gray">注</span>
+    画布尺寸要给"演化扩散"留余量。Acorn 跑 5206 代才稳定下来，需要至少 200×200 的活动空间。
+  </p>
+</div>
+
+<h2><span class="num">＊</span> 常见问题</h2>
+<div class="card stack">
+  <h3>报 <code>Error: JavaFX runtime components are missing</code></h3>
+  <p>用 <code>mvn javafx:run</code> 跑，不要用 <code>java -jar</code>。或者把 JavaFX module 显式 <code>--add-modules</code>。</p>
+
+  <h3>JDK 8 能不能跑</h3>
+  <p>不行。新 pom 已升到 Java 11 + JavaFX 17。要跑 JDK 8 版本可以 <code>git checkout 35ff2ed</code> 看老代码。</p>
+
+  <h3>Breeder1 跑久了卡</h3>
+  <p>Breeder 是二次增长图样，活细胞数随时间平方增长，迟早会撑爆 1500×700 画布。撞到边界后会出现"边缘异常"，这是硬边界设计的预期行为。</p>
+
+  <h3>窗口太大屏幕装不下</h3>
+  <p>调小 <code>PatternPreset.BREEDER1</code> 的 <code>canvasWidth/canvasHeight</code>，或者加大 <code>sideLength</code> 让 cell 变大但格子数变少。</p>
+</div>
+
+<h2><span class="num">＊</span> 一句话总结</h2>
+<div class="card">
+  <p>
+    一个 <strong>能跑得动的康威生命游戏</strong>：单 Canvas 渲染 + 稀疏 Set 演化，
+    丢一个 <code>.cells</code> 文件 + 加一条枚举，就能看任意图样在屏幕上活过来。
+    <code>mvn javafx:run</code> 启动，<kbd>Space</kbd> 暂停，鼠标画几笔，享受。
+  </p>
+</div>
+
+</div>
+</body>
+</html>
