@@ -1,150 +1,174 @@
 package givedrug.math.gameoflife;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
+import javafx.animation.AnimationTimer;
 import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.scene.Group;
+import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Conway's Game of Life — JavaFX 实现（重构版）。
+ *
+ * 主要改进：
+ *  - 渲染：单 Canvas + GraphicsContext.fillRect，替换原先 105 万 Rectangle 节点
+ *  - 算法：稀疏活细胞 Set，每代复杂度 ~O(A)
+ *  - 加载：自动测尺寸，命令行 / 默认枚举切换图样
+ *  - 控制：Space 暂停/继续 · S 单步 · ↑↓ 调速 · R 重置 · C 清屏 · 鼠标点击切换格子
+ *
+ * 命令行：mvn javafx:run -Djavafx.args="breeder1"  或  "gun"
+ */
 public class GameOfLife extends Application {
-    int generation = 0;
 
-    //从左上角，向右为x正方向，向下为y正方向
-    //gosperglidergun.cells
-//    String patternFile = "gosperglidergun.cells";
-//    int boundx = 36;
-//    int boundy = 9;
-//    boolean[][] map;
-//    int width = 100;
-//    int heigth = 50;
-//    int sideLength = 10;
-//    int shiftx = 10;
-//    int shifty = 5;
-//    boolean[][] bigMap;
+    private GameEngine engine;
+    private PatternPreset preset;
+    private Canvas canvas;
+    private GraphicsContext gc;
+    private Stage stage;
 
-    //breeder1.cells
-    String patternFile = "breeder1.cells";
-    int boundx = 749;
-    int boundy = 338;
-    boolean[][] map;
-    int width = 1500;
-    int heigth = 700;
-    int sideLength = 1;
-    int shiftx = 0;
-    int shifty = 350;
-    boolean[][] bigMap;
+    private boolean paused = false;
+    private long stepIntervalNanos = 50_000_000L; // 50ms
+    private long lastStepNanos = 0;
 
-    @Override
-    public void init() throws Exception {
-        super.init();
-        map = new LoadPatternFile().getPatternMap(patternFile, boundx, boundy);
-
-        bigMap = new boolean[width][heigth];
-
-        for (int i = 0; i < boundx; i++) {
-            for (int j = 0; j < boundy; j++) {
-                if (map[j][i]) {
-                    bigMap[i + shiftx][j + shifty] = true;
-                }
-            }
-        }
-
-    }
+    private static final Color ALIVE_COLOR = Color.BLACK;
+    private static final Color DEAD_COLOR = Color.WHITE;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        this.stage = primaryStage;
 
-        primaryStage.setTitle("game-of-life");
+        List<String> args = getParameters().getRaw();
+        String arg = args.isEmpty() ? null : args.get(0);
+        this.preset = PatternPreset.fromArg(arg, PatternPreset.BREEDER1);
 
-        Group root = new Group();
-        Rectangle[][] rs = generateGrid(width, heigth, sideLength);
+        loadPreset(preset);
 
-        painting(rs, bigMap);
+        BorderPane root = new BorderPane();
+        canvas = new Canvas(
+                preset.canvasWidth * (double) preset.sideLength,
+                preset.canvasHeight * (double) preset.sideLength);
+        gc = canvas.getGraphicsContext2D();
+        root.setCenter(canvas);
 
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < heigth; j++) {
-                root.getChildren().add(rs[i][j]);
+        // 鼠标点击：切换格子状态（暂停时尤其有用）
+        canvas.setOnMousePressed(e -> {
+            int x = (int) (e.getX() / preset.sideLength);
+            int y = (int) (e.getY() / preset.sideLength);
+            engine.setAlive(x, y, !engine.isAlive(x, y));
+            redrawCell(x, y);
+        });
+
+        Scene scene = new Scene(root, canvas.getWidth(), canvas.getHeight(), Color.WHITE);
+
+        scene.setOnKeyPressed(e -> {
+            switch (e.getCode()) {
+                case SPACE:
+                    paused = !paused;
+                    updateTitle();
+                    break;
+                case S:
+                    if (paused) doStep();
+                    break;
+                case UP:
+                    stepIntervalNanos = Math.max(8_000_000L, stepIntervalNanos / 2);
+                    updateTitle();
+                    break;
+                case DOWN:
+                    stepIntervalNanos = Math.min(2_000_000_000L, stepIntervalNanos * 2);
+                    updateTitle();
+                    break;
+                case R:
+                    engine.clear();
+                    loadPreset(preset);
+                    fullRedraw();
+                    break;
+                case C:
+                    engine.clear();
+                    fullRedraw();
+                    break;
+                default:
             }
-        }
+        });
 
-        Scene scene = new Scene(root, width * sideLength, heigth * sideLength, Color.WHITE);
         primaryStage.setScene(scene);
+        updateTitle();
         primaryStage.show();
+        canvas.requestFocus();
 
-        EventHandler<ActionEvent> eventHandler = e -> {
-            long time = System.currentTimeMillis();
-            nextStep(bigMap);
-            painting(rs, bigMap);
-            System.out.println("generation:"+(++generation) + ",time" + (System.currentTimeMillis() - time));
-        };
+        fullRedraw();
 
-        Timeline animation = new Timeline(new KeyFrame(Duration.millis(200), eventHandler));
-        animation.setCycleCount(Timeline.INDEFINITE);
-        animation.play();
+        new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                if (paused) return;
+                if (now - lastStepNanos < stepIntervalNanos) return;
+                lastStepNanos = now;
+                doStep();
+            }
+        }.start();
     }
 
-    private void nextStep(boolean[][] map) {
-
-        int[][] count = new int[width][heigth];
-
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < heigth; j++) {
-                int sum = 0;
-                if (i - 1 >= 0 && map[i - 1][j]) sum++;
-                if (i + 1 <= width - 1 && map[i + 1][j]) sum++;
-                if (j - 1 >= 0 && map[i][j - 1]) sum++;
-                if (j + 1 <= heigth - 1 && map[i][j + 1]) sum++;
-                if (i - 1 >= 0 && j - 1 >= 0 && map[i - 1][j - 1]) sum++;
-                if (i + 1 <= width - 1 && j + 1 <= heigth - 1 && map[i + 1][j + 1]) sum++;
-                if (i - 1 >= 0 && j + 1 <= heigth - 1 && map[i - 1][j + 1]) sum++;
-                if (i + 1 <= width - 1 && j - 1 >= 0 && map[i + 1][j - 1]) sum++;
-                count[i][j] = sum;
-            }
+    private void loadPreset(PatternPreset p) {
+        engine = new GameEngine(p.canvasWidth, p.canvasHeight);
+        try {
+            Pattern pattern = new LoadPatternFile().load(p.fileName);
+            engine.loadPattern(pattern, p.shiftX, p.shiftY);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
-
-        for (int i = 0; i < count.length; i++) {
-            for (int j = 0; j < count[i].length; j++) {
-                if (map[i][j] && (count[i][j] < 2 || count[i][j] > 3)) map[i][j] = false;
-                if (!map[i][j] && count[i][j] == 3) map[i][j] = true;
-            }
-        }
-
     }
 
-    private void painting(Rectangle[][] rs, boolean[][] map) {
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < heigth; j++) {
-                if (map[i][j]) {
-                    rs[i][j].setFill(Color.BLACK);
-                } else {
-                    rs[i][j].setFill(Color.WHITE);
-                }
-            }
+    private void doStep() {
+        long t = System.currentTimeMillis();
+        Set<Long> changed = engine.step();
+        // 增量重绘
+        for (long key : changed) {
+            int x = Pattern.decodeX(key);
+            int y = Pattern.decodeY(key);
+            redrawCell(x, y);
         }
-
+        long elapsed = System.currentTimeMillis() - t;
+        if (engine.getGeneration() % 30 == 0) {
+            System.out.printf("gen=%d alive=%d step=%dms changed=%d%n",
+                    engine.getGeneration(), engine.aliveCount(), elapsed, changed.size());
+        }
+        Platform.runLater(this::updateTitle);
     }
 
-    public Rectangle[][] generateGrid(int width, int height, int sideLength) {
-        Rectangle[][] rs = new Rectangle[width][height];
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                Rectangle r = new Rectangle();
-                r.setX(i * sideLength);
-                r.setY(j * sideLength);
-                r.setWidth(sideLength);
-                r.setHeight(sideLength);
-                r.setFill(Color.WHITE);
-                rs[i][j] = r;
-            }
+    private void fullRedraw() {
+        gc.setFill(DEAD_COLOR);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        gc.setFill(ALIVE_COLOR);
+        int s = preset.sideLength;
+        for (long key : engine.aliveCells()) {
+            int x = Pattern.decodeX(key);
+            int y = Pattern.decodeY(key);
+            gc.fillRect(x * (double) s, y * (double) s, s, s);
         }
-
-        return rs;
     }
 
+    private void redrawCell(int x, int y) {
+        int s = preset.sideLength;
+        gc.setFill(engine.isAlive(x, y) ? ALIVE_COLOR : DEAD_COLOR);
+        gc.fillRect(x * (double) s, y * (double) s, s, s);
+    }
+
+    private void updateTitle() {
+        if (stage == null) return;
+        double fps = 1_000_000_000.0 / stepIntervalNanos;
+        stage.setTitle(String.format(
+                "game-of-life · %s · gen=%d · alive=%d · %.1f gen/s%s",
+                preset.name(), engine.getGeneration(), engine.aliveCount(),
+                fps, paused ? " · [PAUSED]" : ""));
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
 }
